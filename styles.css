@@ -1,0 +1,22 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+.heading{
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: row;
+    padding: 12px;
+}
+
+.paragraph{
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: row;
+    padding: 12px;
+    opacity: 0.6;
+    font-weight: bold;
+}
