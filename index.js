@@ -6,46 +6,28 @@ let isSpinning = false
 let skipArr = []
 let resultArr = []
 
-// function createResultLists(){
-//   console.log("abc");
+if (localStorage.getItem('spinWheelItems')) {
+  spinArr = JSON.parse(localStorage.getItem('spinWheelItems'))
+  displayList()
+  drawWheel()
+}
 
-//   let colNum = parseInt(document.getElementById("noOfList").value);
-//   console.log(colNum,"colnum");
-//   let total = resultArr.length;
-//   let count = Math.ceil(total / colNum);
-//   console.log(count,"count");
+let resultArrays = []
 
-// }
+function createResultLists() {
+  let colNum = parseInt(document.getElementById('noOfList').value)
+  if (isNaN(colNum) || colNum <= 0) {
+    console.log('Invalid number of lists specified.')
+    return
+  }
+  resultArrays = Array.from({ length: colNum }, () => [])
 
-// function createColumns (colNum){
-//   var group,
-//       result = [];
-// var colNum = colNum;
-// var total = data.length;
-//   console.log("total", total);
-// var count = Math.ceil(total/colNum);
-//   console.log("count",count);
-// var column = 0;
+  for (let i = 0; i < resultArr.length; i++) {
+    resultArrays[i % colNum].push(resultArr[i])
+  }
 
-// for (var i = 0; i < count.length; i++) {
-//       group = [];
-//       result.push(group);
-//       console.log("result", result);
-// }
-
-//   for (var i = 0; i < total; i++) {
-//   column++;
-//     console.log("column", column);
-
-//     //group.push(data[i]);
-
-//   $("#columns").append('<div id="column' + column + '" class="col-group"></div>');
-//   $("#column" + column).html(data.splice(0, count));
-//   }
-//   $("#column").remove();
-// }
-// createColumns(3);
-// });
+  updateResultList()
+}
 
 function drawWheel() {
   let slices = spinArr.length
@@ -138,6 +120,7 @@ function displayList() {
 
     let skipInput = document.createElement('span')
     skipInput.innerHTML = '<i class="fa fa-eye"></i>'
+
     skipInput.className = 'skip-val'
     skipInput.onclick = function () {
       toggleSkip(item, spinWheelItem, skipInput)
@@ -154,6 +137,7 @@ function displayList() {
         drawWheel()
       }
     }
+
     list.appendChild(item)
     item.appendChild(value)
     value.appendChild(skipInput)
@@ -206,11 +190,25 @@ function updateSkipList() {
 function updateResultList() {
   let resultList = document.getElementById('result-list')
   resultList.innerHTML = ''
-  resultArr.forEach((resultItem) => {
-    let item = document.createElement('div')
-    item.className = 'list-item'
-    item.textContent = resultItem
-    resultList.appendChild(item)
+
+  resultArrays.forEach((array, index) => {
+    let col = document.createElement('div')
+    col.className = 'result-column'
+
+    if (resultArrays.length > 1) {
+      let header = document.createElement('h6')
+      header.textContent = `Result List ${index + 1}`
+      col.appendChild(header)
+    }
+
+    array.forEach((resultItem) => {
+      let item = document.createElement('div')
+      item.className = 'list-item'
+      item.textContent = resultItem
+      col.appendChild(item)
+    })
+
+    resultList.appendChild(col)
   })
 }
 
@@ -256,7 +254,9 @@ speedSlider.oninput = function () {
 
 function spin() {
   let spinButton = document.getElementById('spinbtn')
-  if (isSpinning) {
+
+  if (spinArr.length === 0) {
+    alert('No items to spin! Please add items to the wheel.')
     return
   }
 
@@ -266,10 +266,6 @@ function spin() {
 
   let slices = spinArr.length
   let spin = Math.floor(Math.random() * slices + 1) * (360 / slices)
-
-  timeSlider.oninput = function () {
-    duration.innerHTML = this.value
-  }
 
   rotateElement(canvas, {
     angle: 0,
@@ -287,25 +283,12 @@ function spin() {
     resultIndex = (slices + resultIndex) % slices
 
     let resultText = spinArr[resultIndex]
-    //         let listCount = parseInt(document.getElementById("noOfList").value);
-    //         let arrays = [];
-    //         for (let i = 0; i < listCount; i++) {
-    //             arrays.push([]);
-    //         }
-
-    //         // Distribute the results into the arrays
-    //         for (let i = 0; i < resultText.length; i++) {
-    //             arrays[i % listCount].push(resultText[i]);
-    //         }
-
-    // console.log(arrays, "arrays");
 
     spinArr = spinArr.filter(function (item) {
       return item !== resultText
     })
 
     updateModal(resultText)
-    console.log(spinArr)
 
     let resultButton = document.getElementById('resultButton')
     resultButton.click()
@@ -331,14 +314,12 @@ function rotateElement(element, options) {
     if (!start) start = timestamp
 
     var progress = timestamp - start
-    // currentAngle = options.angle + (options.animateTo - options.angle) * Math.min(progress / options.duration, 1);
 
     let totalRotation =
       options.angle +
       (options.animateTo - options.angle) *
         Math.min(progress / options.duration, 1)
     currentAngle = options.speed * totalRotation
-    console.log(spinArr)
 
     element.style.transform = 'rotate(' + currentAngle + 'deg)'
 
@@ -352,7 +333,7 @@ function skipData() {
   let modalBody = document.querySelector('.modal-body p')
   let skipValue = modalBody.textContent
   skipArr.push(skipValue)
-  console.log('SkippedArray', skipArr)
+
   spinArr = spinArr.filter(function (item) {
     return item !== skipValue
   })
@@ -361,12 +342,14 @@ function skipData() {
   localStorage.setItem('SkippedArray', JSON.stringify(skipArr))
   drawWheel()
   displayList()
+  updateSkipList()
 }
 function doneData() {
   let modalBody = document.querySelector('.modal-body p')
   let doneValue = modalBody.textContent
   resultArr.push(doneValue)
-  console.log('resultArray', resultArr)
+  createResultLists()
+
   spinArr = spinArr.filter(function (item) {
     return item !== doneValue
   })
@@ -376,13 +359,6 @@ function doneData() {
   drawWheel()
   updateResultList()
 }
-
-document
-  .getElementById('result-list-tab')
-  .addEventListener('click', updateResultList)
-document
-  .getElementById('skip-list-tab')
-  .addEventListener('click', updateSkipList)
 
 function clearList() {
   localStorage.clear()
